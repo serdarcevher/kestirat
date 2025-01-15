@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Medya Dönüştürücü</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background-color: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .progress {
+      width: 0%;
+      height: 100%;
+      background-color: #4CAF50;
+      transition: width 0.3s;
+    }
+    .nav {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <button onclick="location.href='settings.html'">Ayarlar</button>
+  </div>
+  
+  <h2>Medya Dönüştürücü</h2>
+  
+  <input type="file" id="mediaFile" accept="video/*,audio/*">
+  <br><br>
+  
+  <textarea id="prompt" rows="4" cols="50" 
+    placeholder="Ne yapmak istediğinizi açıklayın (örn: 'videoyu siyah beyaz yap', 'videonun ilk 3 saniyesini kırp', 'videonun sesini ayrı bir dosya olarak kaydet' vb.)"></textarea>
+  <br><br>
+  
+  <button onclick="processMedia()">Dönüştür</button>
+  
+  <div class="progress-bar">
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html> 

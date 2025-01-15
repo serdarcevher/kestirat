@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ayarlar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .nav {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <button onclick="location.href='index.html'">Ana Sayfa</button>
+  </div>
+
+  <h2>Ayarlar</h2>
+  
+  <label for="apiKey">Google Gemini API Anahtarı:</label><br>
+  <input type="text" id="apiKey" style="width: 300px"><br><br>
+  
+  <button onclick="saveSettings()">Kaydet</button>
+
+  <script src="settings.js"></script>
+</body>
+</html> 

@@ -1,0 +1,19 @@
+{
+	"name": "kestir-at",
+	"version": "1.0.0",
+	"description": "KestirAt, an simple media converter application using ffmpeg and AI",
+	"main": "main.js",
+	"scripts": {
+		"start": "electron .",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@google/generative-ai": "^0.1.0",
+		"electron": "^29.0.0",
+		"electron-store": "^8.1.0",
+		"ffmpeg-static": "^5.2.0"
+	}
+}
