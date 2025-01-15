@@ -101,7 +101,7 @@ async function runFFmpegCommand(command, inputPath, outputPath, event) {
   });
 }
 
-ipcMain.handle('processMedia', async (event, { filePath, prompt }) => {
+ipcMain.handle('processMedia', async (event, { filePath, prompt, maxSize }) => {
   const apiKey = store.get('geminiApiKey');
   
   if (!apiKey) {
@@ -118,11 +118,17 @@ ipcMain.handle('processMedia', async (event, { filePath, prompt }) => {
     
     const outputPath = getUniqueOutputPath(filePath);
     
+    // Maksimum boyut sınırlaması varsa prompt'a ekle
+    let sizeLimit = '';
+    if (maxSize > 0) {
+      sizeLimit = `Media quality should be adjusted to the maximum quality limited by a maximum file size of ${maxSize}MB. `;
+    }
+    
     const aiPrompt = `
       Input file: "${filePath}"
       Input file size: ${fileSizeInMB} MB
       Output file: "${outputPath}"
-      Operation: ${prompt}
+      ${sizeLimit}Operation: ${prompt}
       
       Give me the ffmpeg command(s) for this operation. Requirements:
       1. Use the exact input and output paths provided above

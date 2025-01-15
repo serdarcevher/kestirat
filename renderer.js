@@ -54,6 +54,7 @@ function handleFileSelect(e) {
 async function processMedia() {
   const fileInput = document.getElementById('mediaFile');
   const promptInput = document.getElementById('prompt');
+  const maxSizeSelect = document.getElementById('maxSize');
   const convertButton = document.querySelector('#convertButton');
   const terminalContentDiv = document.getElementById('terminalContent');
   
@@ -64,6 +65,7 @@ async function processMedia() {
 
   const filePath = fileInput.files[0].path;
   const prompt = promptInput.value;
+  const maxSize = parseInt(maxSizeSelect.value);
 
   if (!prompt) {
     alert('Lütfen bir işlem açıklaması girin');
@@ -74,16 +76,14 @@ async function processMedia() {
     convertButton.disabled = true;
     document.getElementById('progress').style.width = '0%';
     
-    // Terminal içeriğini temizle
     terminalContent = '';
     terminalContentDiv.textContent = '';
     
-    // Dialog'u göster
     if (terminalDialog && terminalDialog.showModal) {
       terminalDialog.showModal();
     }
     
-    await ipcRenderer.invoke('processMedia', { filePath, prompt });
+    await ipcRenderer.invoke('processMedia', { filePath, prompt, maxSize });
   } catch (error) {
     alert('Hata: ' + error);
   }

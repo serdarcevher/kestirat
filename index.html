@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>KestirAt Medya Dönüştürücü</title>
+  <title>KestirAt Medya Dönüştürücü (FFmpeg yardımcısı)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -186,13 +186,30 @@
   </div>
   
   <div class="container">
-    <h2><b>KestirAt</b> Medya Dönüştürücü</h2>
+    <h2><b>KestirAt</b> Medya Dönüştürücü (ffmpeg yardımcısı)</h2>
     
     <div class="file-input-container" onclick="document.getElementById('mediaFile').click()">
       <p>Dosya seçmek için tıklayın</p>
       <input type="file" id="mediaFile" accept="video/*,audio/*">
     </div>
     
+    <div style="margin-bottom: 1rem;">
+      <label for="maxSize" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--text-color);">
+        Maksimum boyut (MB)
+      </label>
+      <select id="maxSize" style="width: 150px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; background-color: white;">
+        <option value="0">Limit yok</option>
+        <option value="5">5 MB</option>
+        <option value="10">10 MB</option>
+        <option value="15">15 MB</option>
+        <option value="20">20 MB</option>
+        <option value="25">25 MB</option>
+        <option value="30">30 MB</option>
+        <option value="40">40 MB</option>
+        <option value="50">50 MB</option>
+      </select>
+    </div>
+
     <textarea id="prompt" rows="4" 
       placeholder="Ne yapmak istediğinizi açıklayın (örn: 'videoyu siyah beyaz yap', 'videonun ilk 3 saniyesini kırp', 'videonun sesini ayrı bir dosya olarak kaydet' vb.)"></textarea>
     
