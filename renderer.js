@@ -64,10 +64,13 @@ async function processMedia() {
   }
 
   const filePath = fileInput.files[0].path;
-  const prompt = promptInput.value;
+  let prompt = promptInput.value;
   const maxSize = parseInt(maxSizeSelect.value);
 
-  if (!prompt) {
+  // Eğer sadece boyut sınırı seçilmişse ve prompt boşsa
+  if (!prompt && maxSize > 0) {
+    prompt = 'Shrink video';
+  } else if (!prompt) {
     alert('Lütfen bir işlem açıklaması girin');
     return;
   }
@@ -86,6 +89,8 @@ async function processMedia() {
     await ipcRenderer.invoke('processMedia', { filePath, prompt, maxSize });
   } catch (error) {
     alert('Hata: ' + error);
+  } finally {
+    convertButton.disabled = false;
   }
 }
 
