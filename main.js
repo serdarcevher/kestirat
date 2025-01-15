@@ -38,51 +38,40 @@ ipcMain.handle('getApiKey', async () => {
   return store.get('geminiApiKey');
 });
 
-ipcMain.handle('processMedia', async (event, { filePath, prompt }) => {
-  const apiKey = store.get('geminiApiKey');
+// Benzersiz dosya adı oluşturan fonksiyon
+function getUniqueOutputPath(originalPath) {
+  let counter = 1;
+  let outputPath = originalPath.replace(/\.[^/.]+$/, "") + "-converted" + path.extname(originalPath);
   
-  if (!apiKey) {
-    event.sender.send('error', 'API anahtarı bulunamadı');
-    return false;
+  while (fs.existsSync(outputPath)) {
+    outputPath = originalPath.replace(/\.[^/.]+$/, "") + `-converted-${counter}` + path.extname(originalPath);
+    counter++;
   }
+  
+  return outputPath;
+}
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-  try {
-    const stats = fs.statSync(filePath);
-    const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
-    
-    const outputPath = filePath.replace(/\.[^/.]+$/, "") + "-converted" + path.extname(filePath);
-    
-    const aiPrompt = `
-      Input file: "${filePath}"
-      Input file size: ${fileSizeInMB} MB
-      Output file: "${outputPath}"
-      Operation: ${prompt}
-      
-      Give me the exact ffmpeg command for this operation. The command should:
-      1. Use the exact input and output paths provided above
-      2. Include only the command, no explanations
-      3. Start with 'ffmpeg'
-      4. Do not include quotes around file paths
-    `;
-
-    const result = await model.generateContent(aiPrompt);
-    const ffmpegCommand = result.response.text();
-    
-    console.log('AI tarafından önerilen FFmpeg komutu:', ffmpegCommand);
-    
-    const commandParts = ffmpegCommand
+// FFmpeg komutunu çalıştıran fonksiyon
+async function runFFmpegCommand(command, inputPath, outputPath, event) {
+  return new Promise((resolve, reject) => {
+    const commandParts = command
       .trim()
       .split(' ')
       .slice(1)
       .map(part => {
-        if (part === filePath || part === outputPath) {
+        if (part === inputPath || part === outputPath) {
           return part;
         }
         return part.replace(/^["']|["']$/g, '');
-      });
+      })
+      .filter(part => part); // Boş parçaları filtrele
+
+    // Komut parçaları boşsa veya geçersizse atla
+    if (!commandParts.length) {
+      console.log('Boş veya geçersiz komut, atlıyorum:', command);
+      resolve();
+      return;
+    }
 
     console.log('FFmpeg komut parçaları:', commandParts);
 
@@ -104,13 +93,105 @@ ipcMain.handle('processMedia', async (event, { filePath, prompt }) => {
 
     ffmpegProcess.on('close', (code) => {
       if (code === 0) {
-        event.sender.send('complete', outputPath);
+        resolve();
       } else {
-        event.sender.send('error', `FFmpeg işlemi başarısız oldu (Kod: ${code})\nHata detayı:\n${errorOutput}`);
+        reject(new Error(`FFmpeg işlemi başarısız oldu (Kod: ${code})\nHata detayı:\n${errorOutput}`));
+      }
+    });
+  });
+}
+
+ipcMain.handle('processMedia', async (event, { filePath, prompt }) => {
+  const apiKey = store.get('geminiApiKey');
+  
+  if (!apiKey) {
+    event.sender.send('error', 'API anahtarı bulunamadı');
+    return false;
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+  try {
+    const stats = fs.statSync(filePath);
+    const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+    
+    const outputPath = getUniqueOutputPath(filePath);
+    
+    const aiPrompt = `
+      Input file: "${filePath}"
+      Input file size: ${fileSizeInMB} MB
+      Output file: "${outputPath}"
+      Operation: ${prompt}
+      
+      Give me the ffmpeg command(s) for this operation. Requirements:
+      1. Use the exact input and output paths provided above
+      2. If the operation requires multiple steps, return multiple commands, one per line
+      3. Each command should start with 'ffmpeg'
+      4. Do not include quotes around file paths
+      5. If multiple commands are needed, use temporary files with "-temp" suffix for intermediate steps
+      6. Include only the commands, no explanations
+    `;
+
+    const result = await model.generateContent(aiPrompt);
+    const ffmpegCommands = result.response.text()
+      .trim()
+      .split('\n')
+      .map(cmd => cmd.trim())
+      .filter(cmd => cmd && cmd.startsWith('ffmpeg')); // Boş satırları ve ffmpeg ile başlamayan komutları filtrele
+    
+    console.log('AI tarafından önerilen FFmpeg komutları:', ffmpegCommands);
+
+    if (!ffmpegCommands.length) {
+      event.sender.send('error', 'AI geçerli bir FFmpeg komutu üretemedi');
+      return false;
+    }
+
+    let currentInputPath = filePath;
+    let currentOutputPath = outputPath;
+
+    // Birden fazla komut varsa, ara dosyalar için temp path'ler oluştur
+    for (let i = 0; i < ffmpegCommands.length; i++) {
+      const isLastCommand = i === ffmpegCommands.length - 1;
+      
+      if (!isLastCommand) {
+        // Ara dosya için temp path oluştur
+        currentOutputPath = filePath.replace(/\.[^/.]+$/, "") + `-temp-${i}` + path.extname(filePath);
+      } else {
+        // Son komut için final output path'i kullan
+        currentOutputPath = outputPath;
+      }
+
+      try {
+        await runFFmpegCommand(ffmpegCommands[i], currentInputPath, currentOutputPath, event);
+        
+        // Bir sonraki komut için input path'i güncelle
+        if (!isLastCommand) {
+          currentInputPath = currentOutputPath;
+        }
+      } catch (error) {
+        // Hata durumunda temp dosyaları temizle
+        ffmpegCommands.forEach((_, index) => {
+          const tempPath = filePath.replace(/\.[^/.]+$/, "") + `-temp-${index}` + path.extname(filePath);
+          if (fs.existsSync(tempPath)) {
+            fs.unlinkSync(tempPath);
+          }
+        });
+        throw error;
+      }
+    }
+
+    // Temp dosyaları temizle
+    ffmpegCommands.forEach((_, index) => {
+      const tempPath = filePath.replace(/\.[^/.]+$/, "") + `-temp-${index}` + path.extname(filePath);
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
       }
     });
 
+    event.sender.send('complete', outputPath);
     return true;
+
   } catch (error) {
     if (error.message.includes('API key not valid')) {
       event.sender.send('error', 'API key not valid');
