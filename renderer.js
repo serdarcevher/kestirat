@@ -1,12 +1,60 @@
 const { ipcRenderer } = require('electron');
 
 let terminalContent = '';
+let terminalDialog = null;
+
+// Sayfa yüklendiğinde dialog'u hazırla
+document.addEventListener('DOMContentLoaded', () => {
+  terminalDialog = document.getElementById('terminalDialog');
+  if (!terminalDialog.showModal) {
+    // Eğer native dialog desteği yoksa polyfill ekle
+    dialogPolyfill.registerDialog(terminalDialog);
+  }
+});
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function updateFileInfo(file) {
+  const container = document.querySelector('.file-input-container');
+  const fileInput = document.getElementById('mediaFile');
+  const infoDiv = container.querySelector('.file-info') || document.createElement('div');
+  infoDiv.className = 'file-info';
+  
+  if (file) {
+    infoDiv.innerHTML = `
+      <p class="file-name">${file.name}</p>
+      <p class="file-size">${formatFileSize(file.size)}</p>
+    `;
+    container.classList.add('has-file');
+  } else {
+    infoDiv.innerHTML = `<p>Dosya seçmek için tıklayın</p>`;
+    container.classList.remove('has-file');
+  }
+
+  // Input elementini koruyalım, sadece bilgi kısmını güncelleyelim
+  if (!container.contains(infoDiv)) {
+    container.insertBefore(infoDiv, fileInput);
+  }
+}
+
+function handleFileSelect(e) {
+  if (this.files.length > 0) {
+    updateFileInfo(this.files[0]);
+  } else {
+    updateFileInfo(null);
+  }
+}
 
 async function processMedia() {
   const fileInput = document.getElementById('mediaFile');
   const promptInput = document.getElementById('prompt');
   const convertButton = document.querySelector('#convertButton');
-  const terminalDialog = document.getElementById('terminalDialog');
   const terminalContentDiv = document.getElementById('terminalContent');
   
   if (!fileInput.files.length) {
@@ -26,10 +74,14 @@ async function processMedia() {
     convertButton.disabled = true;
     document.getElementById('progress').style.width = '0%';
     
-    // Terminal penceresini aç ve içeriği temizle
+    // Terminal içeriğini temizle
     terminalContent = '';
     terminalContentDiv.textContent = '';
-    terminalDialog.showModal();
+    
+    // Dialog'u göster
+    if (terminalDialog && terminalDialog.showModal) {
+      terminalDialog.showModal();
+    }
     
     await ipcRenderer.invoke('processMedia', { filePath, prompt });
   } catch (error) {
@@ -37,34 +89,43 @@ async function processMedia() {
   }
 }
 
-// Dosya seçildiğinde dosya adını göster
-document.getElementById('mediaFile').addEventListener('change', function(e) {
-  const container = document.querySelector('.file-input-container');
-  if (this.files.length > 0) {
-    container.innerHTML = `<p>Seçilen dosya: ${this.files[0].name}</p>`;
-  } else {
-    container.innerHTML = '<p>Dosya seçmek için tıklayın veya sürükleyin</p>';
-  }
-});
+// İlk yükleme için event listener ekle
+document.getElementById('mediaFile').addEventListener('change', handleFileSelect);
 
 ipcRenderer.on('progress', (event, data) => {
+  const terminalContentDiv = document.getElementById('terminalContent');
+  
   // Terminal içeriğini güncelle
   terminalContent += data + '\n';
-  document.getElementById('terminalContent').textContent = terminalContent;
-  document.getElementById('terminalContent').scrollTop = document.getElementById('terminalContent').scrollHeight;
+  terminalContentDiv.textContent = terminalContent;
   
-  // Progress bar'ı güncelle
+  // Otomatik scroll
+  if (terminalContentDiv.scrollHeight > terminalContentDiv.clientHeight) {
+    terminalContentDiv.scrollTop = terminalContentDiv.scrollHeight;
+  }
+  
   document.getElementById('progress').style.width = '50%';
 });
 
 ipcRenderer.on('complete', (event, outputPath) => {
   document.getElementById('progress').style.width = '100%';
   document.querySelector('#convertButton').disabled = false;
+  
+  // İşlem bittiğinde terminal penceresini kapat
+  if (terminalDialog) {
+    terminalDialog.close();
+  }
+  
   alert('İşlem tamamlandı!');
 });
 
 ipcRenderer.on('error', (event, message) => {
   document.querySelector('#convertButton').disabled = false;
+  
+  // Hata durumunda terminal penceresini kapat
+  if (terminalDialog) {
+    terminalDialog.close();
+  }
   
   if (message.includes('API key')) {
     alert('API anahtarı geçerli değil. Lütfen geçerli anahtar girin');
@@ -80,5 +141,4 @@ ipcRenderer.on('error', (event, message) => {
     document.body.appendChild(errorDialog);
     errorDialog.showModal();
   }
-}); 
 }); 
