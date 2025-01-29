@@ -1,17 +1,5 @@
 const { ipcRenderer } = require('electron');
 
-let terminalContent = '';
-let terminalDialog = null;
-
-// Sayfa yüklendiğinde dialog'u hazırla
-document.addEventListener('DOMContentLoaded', () => {
-  terminalDialog = document.getElementById('terminalDialog');
-  if (!terminalDialog.showModal) {
-    // Eğer native dialog desteği yoksa polyfill ekle
-    dialogPolyfill.registerDialog(terminalDialog);
-  }
-});
-
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -37,7 +25,6 @@ function updateFileInfo(file) {
     container.classList.remove('has-file');
   }
 
-  // Input elementini koruyalım, sadece bilgi kısmını güncelleyelim
   if (!container.contains(infoDiv)) {
     container.insertBefore(infoDiv, fileInput);
   }
@@ -56,7 +43,6 @@ async function processMedia() {
   const promptInput = document.getElementById('prompt');
   const maxSizeSelect = document.getElementById('maxSize');
   const convertButton = document.querySelector('#convertButton');
-  const terminalContentDiv = document.getElementById('terminalContent');
   
   if (!fileInput.files.length) {
     alert('Lütfen bir dosya seçin');
@@ -67,7 +53,6 @@ async function processMedia() {
   let prompt = promptInput.value;
   const maxSize = parseInt(maxSizeSelect.value);
 
-  // Eğer sadece boyut sınırı seçilmişse ve prompt boşsa
   if (!prompt && maxSize > 0) {
     prompt = 'Shrink video';
   } else if (!prompt) {
@@ -77,60 +62,34 @@ async function processMedia() {
 
   try {
     convertButton.disabled = true;
+    convertButton.textContent = 'Dönüştürülüyor...';
     document.getElementById('progress').style.width = '0%';
-    
-    terminalContent = '';
-    terminalContentDiv.textContent = '';
-    
-    if (terminalDialog && terminalDialog.showModal) {
-      terminalDialog.showModal();
-    }
     
     await ipcRenderer.invoke('processMedia', { filePath, prompt, maxSize });
   } catch (error) {
     alert('Hata: ' + error);
   } finally {
     convertButton.disabled = false;
+    convertButton.textContent = 'Dönüştür';
   }
 }
 
-// İlk yükleme için event listener ekle
 document.getElementById('mediaFile').addEventListener('change', handleFileSelect);
 
 ipcRenderer.on('progress', (event, data) => {
-  const terminalContentDiv = document.getElementById('terminalContent');
-  
-  // Terminal içeriğini güncelle
-  terminalContent += data + '\n';
-  terminalContentDiv.textContent = terminalContent;
-  
-  // Otomatik scroll
-  if (terminalContentDiv.scrollHeight > terminalContentDiv.clientHeight) {
-    terminalContentDiv.scrollTop = terminalContentDiv.scrollHeight;
-  }
-  
   document.getElementById('progress').style.width = '50%';
 });
 
 ipcRenderer.on('complete', (event, outputPath) => {
   document.getElementById('progress').style.width = '100%';
   document.querySelector('#convertButton').disabled = false;
-  
-  // İşlem bittiğinde terminal penceresini kapat
-  if (terminalDialog) {
-    terminalDialog.close();
-  }
-  
+  document.querySelector('#convertButton').textContent = 'Dönüştür';
   alert('İşlem tamamlandı!');
 });
 
 ipcRenderer.on('error', (event, message) => {
   document.querySelector('#convertButton').disabled = false;
-  
-  // Hata durumunda terminal penceresini kapat
-  if (terminalDialog) {
-    terminalDialog.close();
-  }
+  document.querySelector('#convertButton').textContent = 'Dönüştür';
   
   if (message.includes('API key')) {
     alert('API anahtarı geçerli değil. Lütfen geçerli anahtar girin');
