@@ -59,9 +59,11 @@ async function runFFmpegCommand(command, inputPath, outputPath, event) {
       .split(' ')
       .slice(1)
       .map(part => {
-        if (part === inputPath || part === outputPath) {
-          return part;
+        // Eğer bu parça input veya output dosya yoluysa ve boşluk içeriyorsa tırnak içine al
+        if ((part === inputPath || part === outputPath) && part.includes(' ')) {
+          return `"${part}"`;
         }
+        // Diğer parametreleri olduğu gibi döndür
         return part.replace(/^["']|["']$/g, '');
       })
       .filter(part => part); // Boş parçaları filtrele
@@ -76,7 +78,7 @@ async function runFFmpegCommand(command, inputPath, outputPath, event) {
     console.log('FFmpeg komut parçaları:', commandParts);
 
     const ffmpegProcess = spawn(ffmpeg, commandParts, {
-      shell: false
+      shell: true // Windows'ta boşluklu dosya yolları için shell kullanımını etkinleştir
     });
     
     let errorOutput = '';
