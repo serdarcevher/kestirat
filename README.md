@@ -11,6 +11,14 @@ KestirAt, FFmpeg komutlarını yazmakla uğraşmadan, doğal dil ile medya dosya
 
 ![Örnek Kullanım](sample.png)
 
+## Örnek promptlar
+   - "videoyu 2 kat hızlandır"
+   - "videonun ses seviyesini 2 kat artır"
+   - "videonun ilk 3 saniyesini ve son 10 saniyesini kırp"
+   - "videoyu 90 derece saat yönünde döndür"
+   - "videodan 1:30 ile 2:45 arasını kes"
+   - "videonun kenarlarına siyah çerçeve ekle"
+   - "videonun sesini al, ilk 15 saniyesini kullan. Sonuna 3 saniyelik fadeout ekle."
 
 ## Kurulum
 
@@ -37,8 +45,7 @@ npm start
 2. İsterseniz "Maksimum boyut" seçeneğinden çıktı dosyası için bir boyut sınırı belirleyin
 3. Metin alanına yapmak istediğiniz işlemi açıklayın, örneğin:
    - "videoyu siyah beyaz yap"
-   - "videonun ilk 3 saniyesini ve son 10 saniyesini kırp"
-   - "videonun sesinin ilk 30 saniyesini ayrı bir dosya olarak kaydet, sonuna 5 saniyelik fadeout ekle"
+   - "videonun ses seviyesini 2 kat artır"
 4. "Dönüştür" düğmesine tıklayın ve işlemin tamamlanmasını bekleyin
 5. Her şey yolunda giderse, orijinal dosyanın bulunduğu klasörde, dosyaismi-converted.mp4 şeklinde bir çıktı elde edeceksiniz.
 6. Bir sorun oluştuğunda terminalden komut çıktısını takip edebilirsiniz.
