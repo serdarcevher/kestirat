@@ -9,8 +9,6 @@ KestirAt, FFmpeg komutlarını yazmakla uğraşmadan, doğal dil ile medya dosya
 - 🤖 Google Gemini AI ile otomatik komut oluşturma
 - 📊 Dosya boyutu sınırlama seçeneği
 
-![Örnek Kullanım](sample.png)
-
 ## Örnek promptlar
    - "videoyu 2 kat hızlandır"
    - "videonun ses seviyesini 2 kat artır"
@@ -19,6 +17,9 @@ KestirAt, FFmpeg komutlarını yazmakla uğraşmadan, doğal dil ile medya dosya
    - "videodan 1:30 ile 2:45 arasını kes"
    - "videonun kenarlarına siyah çerçeve ekle"
    - "videonun sesini al, ilk 15 saniyesini kullan. Sonuna 3 saniyelik fadeout ekle."
+
+![Örnek Kullanım](sample.png)
+
 
 ## Kurulum
 
